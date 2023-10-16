@@ -1,0 +1,183 @@
+package com.fullstack.security;
+
+import java.security.Key;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.function.Function;
+
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.stereotype.Component;
+
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.SignatureAlgorithm;
+import io.jsonwebtoken.io.Decoders;
+import io.jsonwebtoken.security.Keys;
+
+//@Component
+//public class JwtService {
+//
+//	public static final String SECRET = "5367566B59703373367639792F423F4528482B4D6251655468576D5A71347437";
+//
+//	public String generateToken(String userName) { 
+////	public String generateToken(UserDetails userDetails) {
+//		Map<String, Object> claims = new HashMap<>();
+//		return createToken(claims, userName);
+//	}
+//
+////	private String createToken(Map<String, Object> claims, String userName) {
+////		return Jwts.builder().setClaims(claims).setSubject(userName).setIssuedAt(new Date(System.currentTimeMillis()))
+////				.setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 30))
+////				.signWith(getSignKey(), SignatureAlgorithm.HS256).compact();
+////	}
+//	
+//	
+////	private String createToken(Map<String, Object> claims, String userName) {
+////		 long currentTimeSeconds = System.currentTimeMillis() / 1000; // Convert to seconds
+////	    System.out.println("current Time-----------------"+currentTimeSeconds);
+////	    long expirationTimeSeconds = currentTimeSeconds + 60 * 30; // 30 minutes from now
+////	    System.out.println("exp time-----------------"+expirationTimeSeconds); 
+////        System.out.println("userName-------"+userName);
+//        private String createToken(Map<String, Object> claims, String userName) {
+//            long currentTimeSeconds = System.currentTimeMillis() / 1000; // Convert to seconds
+//            long expirationTimeSeconds = currentTimeSeconds + 60 * 30; // 30 minutes from now
+//
+//            return Jwts.builder()
+//                .setClaims(claims)
+//                .setSubject(userName)
+//                .setIssuedAt(new Date(currentTimeSeconds * 1000)) // Convert back to milliseconds
+//                .setExpiration(new Date(expirationTimeSeconds * 1000)) // Convert back to milliseconds
+//                .signWith(getSignKey(), SignatureAlgorithm.HS256)
+//                .compact();
+//        
+//
+//	}
+//
+//
+//	private Key getSignKey() {
+//		byte[] keyBytes = Decoders.BASE64.decode(SECRET);
+//		return Keys.hmacShaKeyFor(keyBytes);
+//	}
+//
+//	public String extractUsername(String token) {
+//		return extractClaim(token, Claims::getSubject);
+//	}
+//
+//	public Date extractExpiration(String token) {
+//		Date expiration = extractClaim(token, Claims::getExpiration);
+//	    System.out.println("Token expiration from JWT: " + expiration);
+//	    return expiration;
+//	}
+//
+//	public <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
+//		 final Claims claims = extractAllClaims(token);
+//
+//		    // Debugging: Print the claims
+//		    System.out.println("Claims from the token:");
+//		    System.out.println(claims);
+//
+//		    T claimValue = claimsResolver.apply(claims);
+//
+//		    // Debugging: Print the extracted claim value
+//		    System.out.println("Extracted claim value:");
+//		    System.out.println(claimValue);
+//
+//		    return claimValue;
+//	}
+//
+//	private Claims extractAllClaims(String token) {
+//		return Jwts.parserBuilder().setSigningKey(getSignKey()).build().parseClaimsJws(token).getBody();
+//	}
+//
+//	private Boolean isTokenExpired(String token) {
+//		Date expiration = extractExpiration(token);
+//	    Date now = new Date();
+//
+//	    System.out.println("Token expiration time: " + expiration);
+//	    System.out.println("Current time: " + now);
+//
+//	    boolean isExpired = expiration.before(now);
+//	    System.out.println("Token is expired: " + isExpired);
+//
+//	    return isExpired;
+//	}
+//
+//	public Boolean validateToken(String token, UserDetails userDetails) {
+//		 final String username = extractUsername(token);
+//		    System.out.println("Validating token for user: " + username);
+//		    
+//		    if (username.equals(userDetails.getUsername()) && !isTokenExpired(token)) {
+//		        System.out.println("Token is valid.");
+//		        return true;
+//		    } else {
+//		        System.out.println("Token validation failed.");
+//		        return false;
+//		    }
+//	}
+//}
+
+
+
+
+
+@Component
+public class JwtService {
+
+    public static final long JWT_TOKEN_VALIDITY = 5 * 60 * 60;
+    private String secret = "afafasfafafasfasfasfafacasdasfasxASFACASDFACASDFASFASFDAFASFASDAADSCSDFADCVSGCFVADXCcadwavfsfarvf";
+
+    public String getUsernameFromToken(String token) {
+        return getClaimFromToken(token, Claims::getSubject);
+    }
+
+    public Date getExpirationDateFromToken(String token) {
+        return getClaimFromToken(token, Claims::getExpiration);
+    }
+
+    public <T> T getClaimFromToken(String token, Function<Claims, T> claimsResolver) {
+        final Claims claims = getAllClaimsFromToken(token);
+        return claimsResolver.apply(claims);
+    }
+
+    private Claims getAllClaimsFromToken(String token) {
+        return Jwts.parser().setSigningKey(secret).parseClaimsJws(token).getBody();
+    }
+
+    private Boolean isTokenExpired(String token) {
+        final Date expiration = getExpirationDateFromToken(token);
+        System.out.println("is token expired: " + expiration);
+        return expiration.before(new Date());
+    }
+
+    public String generateToken(String userName) {
+        Map<String, Object> claims = new HashMap<>();
+        return doGenerateToken(claims, userName);
+    }
+
+    private String doGenerateToken(Map<String, Object> claims, String subject) {
+        System.out.println("Generating token for: " + subject);
+        long currentTimeMillis = System.currentTimeMillis();
+        System.out.println("Current time: " + new Date(currentTimeMillis));
+
+        long expirationTimeMillis = currentTimeMillis + (JWT_TOKEN_VALIDITY * 1000);
+        System.out.println("Expiration time: " + new Date(expirationTimeMillis));
+
+        return Jwts.builder()
+                .setClaims(claims)
+                .setSubject(subject)
+                .setIssuedAt(new Date(currentTimeMillis))
+                .setExpiration(new Date(expirationTimeMillis))
+                .signWith(SignatureAlgorithm.HS512, secret)
+                .compact();
+    }
+
+    public Boolean validateToken(String token, UserDetails userDetails) {
+        final String username = getUsernameFromToken(token);
+        System.out.println("Username in validateToken: " + username);
+        boolean isTokenExpired = isTokenExpired(token);
+        System.out.println("Is token expired: " + isTokenExpired);
+        System.out.println("userdetails-----------"+userDetails.getUsername());
+        return (username.equals(userDetails.getUsername()) && !isTokenExpired);
+    }
+}

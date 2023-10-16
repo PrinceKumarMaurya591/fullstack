@@ -1,0 +1,37 @@
+//package com.fullstack.security;
+//
+//import org.springframework.security.core.userdetails.UserDetails;
+//import io.jsonwebtoken.Claims;
+//import io.jsonwebtoken.Jwts;
+//import io.jsonwebtoken.SignatureAlgorithm;
+//
+//public class JwtServiceImpl implements JwtService {
+//    private static final String SECRET_KEY = "YourSecretKey"; // Change this to your secret key
+//    private static final long EXPIRATION_TIME = 1000 * 60 * 60 * 24; // Token expiration time (e.g., 24 hours)
+//
+//    @Override
+//    public String generateToken(UserDetails userDetails) {
+//        return Jwts.builder()
+//                .setSubject(userDetails.getUsername())
+//                .setIssuedAt(new Date(System.currentTimeMillis()))
+//                .setExpiration(new Date(System.currentTimeMillis() + EXPIRATION_TIME))
+//                .signWith(SignatureAlgorithm.HS256, SECRET_KEY)
+//                .compact();
+//    }
+//
+//    @Override
+//    public String extractUsername(String token) {
+//        Claims claims = Jwts.parser().setSigningKey(SECRET_KEY).parseClaimsJws(token).getBody();
+//        return claims.getSubject();
+//    }
+//
+//    @Override
+//    public boolean validateToken(String token) {
+//        try {
+//            Jwts.parser().setSigningKey(SECRET_KEY).parse(token);
+//            return true;
+//        } catch (Exception e) {
+//            return false;
+//        }
+//    }
+//}

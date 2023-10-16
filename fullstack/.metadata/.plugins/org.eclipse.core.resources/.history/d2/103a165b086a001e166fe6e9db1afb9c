@@ -1,0 +1,42 @@
+package com.fullstack.security;
+
+
+import java.util.ArrayList;
+
+import org.springframework.security.core.userdetails.User;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.stereotype.Service;
+
+import com.fullstack.entity.Registration;
+import com.fullstack.repository.RegistrationRepository;
+
+
+
+@Service
+public class CustomUserDetailsService implements UserDetailsService {
+
+	private final RegistrationRepository registrationRepository;
+
+	public CustomUserDetailsService(RegistrationRepository registrationRepository) {
+		this.registrationRepository = registrationRepository;
+	}
+
+//	@Override
+//	public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+//		return registrationRepository.findByEmail(username)
+//				.orElseThrow(() -> new UsernameNotFoundException("User Not Found"));
+//	}
+	
+	 @Override
+	    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+	        // Load user details from the repository using the provided email (username)
+	        Registration registration = registrationRepository.findByEmail(username)
+	                .orElseThrow(() -> new UsernameNotFoundException("User Not Found"));
+System.out.println("====="+registration.getEmail());
+	        // Create a UserDetails object with the user's email as the username
+	        return new User(registration.getEmail(), registration.getPassword(), new ArrayList<>());
+	    }
+	
+}

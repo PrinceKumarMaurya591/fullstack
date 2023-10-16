@@ -1,0 +1,7 @@
+package com.fullstack.service;
+
+public interface TokenRevocationService {
+
+	revokeToken(String token)
+	
+}

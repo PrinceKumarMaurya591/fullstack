@@ -1,0 +1,108 @@
+package com.fullstack.controller;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.web.authentication.logout.SecurityContextLogoutHandler;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.fullstack.dto.AuthenticationRequest;
+import com.fullstack.dto.AuthenticationResponse;
+import com.fullstack.security.JwtService;
+import com.fullstack.service.TokenRevocationService;
+
+import jakarta.servlet.http.HttpServletRequest;
+
+@RestController
+@RequestMapping("/auth")
+public class AuthController {
+
+    @Autowired
+    private UserDetailsService userDetailsService;
+
+    @Autowired
+    private AuthenticationManager authenticationManager;
+
+    @Autowired
+    private JwtService jwtService;
+    
+    @Autowired
+    private TokenRevocationService tokenRevocationService;
+    
+
+    @PostMapping("/login")
+    public ResponseEntity<AuthenticationResponse> login(@RequestBody AuthenticationRequest request) {
+        System.out.println("Received login request for email: " + request.getEmail());
+        
+        doAuthenticate(request.getEmail(), request.getPassword());
+        
+        String token = jwtService.generateToken(request.getEmail());
+        System.out.println("Generated JWT token for user: " + request.getEmail());
+        
+        AuthenticationResponse response = AuthenticationResponse.builder()
+                .token(token)
+                .userName(request.getEmail())
+                .build();
+
+        return new ResponseEntity<>(response, HttpStatus.OK);
+    }
+
+    private void doAuthenticate(String email, String password) {
+        System.out.println("Authenticating user with email: " + email);
+      
+        UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(email, password);
+        try {
+            authenticationManager.authenticate(authentication);
+            System.out.println("Authentication successful for user: " + email);
+        } catch (BadCredentialsException e) {
+            System.out.println("Authentication failed for user: " + email);
+            throw new BadCredentialsException("Invalid Username or Password!!");
+        }
+    }
+
+    @ExceptionHandler(BadCredentialsException.class)
+    public String exceptionHandler() {
+        System.out.println("Exception handler triggered: Credentials Invalid!!");
+        return "Credentials Invalid!!";
+    }
+    
+    
+    
+//    @PostMapping("/logout")
+//    public ResponseEntity<String> logout(HttpServletRequest request) {
+//        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+//        if (auth != null) {
+//            new SecurityContextLogoutHandler().logout(request, null, auth);
+//            return ResponseEntity.ok("Logged out successfully.");
+//        } else {
+//            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("You are not logged in.");
+//        }
+//    }
+    
+
+    @RequestMapping("/logout")
+    public ResponseEntity<String> logout(@RequestHeader("Authorization") String token) {
+        if (token != null) {
+            tokenRevocationService.revokeToken(token); // Revoke the user's token
+            return ResponseEntity.ok("Logout successful.");
+        } else {
+            return ResponseEntity.badRequest().body("Invalid token.");
+        }
+    }
+
+    
+}

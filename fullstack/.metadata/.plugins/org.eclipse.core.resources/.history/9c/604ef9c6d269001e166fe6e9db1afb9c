@@ -1,0 +1,9 @@
+package com.fullstack.exception;
+
+public class MaxResendLimitException extends Exception {
+
+	public MaxResendLimitException(String string) {
+		// TODO Auto-generated constructor stub
+	}
+
+}

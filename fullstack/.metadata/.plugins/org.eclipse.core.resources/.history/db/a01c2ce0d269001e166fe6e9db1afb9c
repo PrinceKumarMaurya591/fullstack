@@ -1,0 +1,9 @@
+package com.fullstack.service;
+
+import com.fullstatck.entity.MailSender;
+import com.fullstatck.exception.MaxResendLimitException;
+
+public interface MailSenderService {
+    MailSender sendOtp(String to) throws MaxResendLimitException;
+    boolean verifyOtp(String to, String otp);
+}

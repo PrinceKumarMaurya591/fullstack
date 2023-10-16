@@ -1,0 +1,28 @@
+package com.fullstack.controller;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.fullstack.entity.Registration;
+import com.fullstack.service.RegistrationService;
+//@CrossOrigin(origins = "*")
+@RestController
+@RequestMapping("/registration")
+public class RegistrationController {
+
+    private final RegistrationService registrationService;
+
+    @Autowired
+    public RegistrationController(RegistrationService registrationService) {
+        this.registrationService = registrationService;
+    }
+
+    @PostMapping
+    public Registration register(@RequestBody Registration registration) {
+        return registrationService.register(registration);
+    }
+}

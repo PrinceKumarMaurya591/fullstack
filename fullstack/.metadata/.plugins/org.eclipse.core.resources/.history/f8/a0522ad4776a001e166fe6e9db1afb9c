@@ -1,0 +1,32 @@
+package com.fullstack.security;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.filter.OncePerRequestFilter;
+
+import com.fullstack.service.TokenRevocationService;
+
+import io.jsonwebtoken.io.IOException;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
+public class TokenRevocationFilter extends OncePerRequestFilter {
+
+    @Autowired
+    private TokenRevocationService tokenRevocationService;
+
+    @Override
+    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
+            throws ServletException, IOException {
+        String token = extractTokenFromRequest(request);
+
+        if (token != null && tokenRevocationService.isTokenRevoked(token)) {
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED); // Unauthorized
+            return;
+        }
+
+        filterChain.doFilter(request, response);
+    }
+
+}

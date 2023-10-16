@@ -1,0 +1,54 @@
+package com.fullstack.controller;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.fullstack.dto.EmailRequest;
+import com.fullstack.dto.VerifyOtpRequest;
+import com.fullstack.entity.MailSender;
+import com.fullstack.exception.MaxResendLimitException;
+import com.fullstack.service.MailSenderService;
+//@CrossOrigin(origins = "*")
+@RestController
+@RequestMapping("/mail-sender")
+public class MailSenderController {
+
+   @Autowired
+   MailSenderService mailSenderService;
+
+    @PostMapping("/send-otp")
+    public ResponseEntity<String> sendEmail(@RequestBody EmailRequest emailRequest) {
+        String to = emailRequest.getTo(); // Extract recipient email address
+        System.out.println("to-------" + to);
+        System.out.println("subject----------" + emailRequest.getSubject());
+
+        if (to != null && !to.isEmpty()) {
+            try {
+                // You can use the MailSenderService to send the OTP email
+                MailSender mailSender = mailSenderService.sendOtp(emailRequest);
+                
+                if (mailSender != null) {
+                    return ResponseEntity.ok("Email sent successfully.");
+                } else {
+                    return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Email sending failed.");
+                }
+            } catch (MaxResendLimitException e) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+            }
+        } else {
+            return ResponseEntity.badRequest().body("Recipient email address is missing or empty.");
+        }
+    }
+
+
+    @PostMapping("/verify-otp")
+    public boolean verifyOtp(@RequestBody VerifyOtpRequest request) {
+        return mailSenderService.verifyOtp(request.getTo(), request.getOtp());
+    }
+}

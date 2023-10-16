@@ -1,0 +1,104 @@
+package com.fullstack.serviceImpl;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.stereotype.Service;
+
+import com.fullstack.repository.MailSenderRepository;
+import com.fullstack.entity.MailSender;
+import com.fullstack.exception.MaxResendLimitException;
+
+import com.fullstack.service.MailSenderService;
+
+import java.util.Date;
+import java.util.List;
+import java.util.Optional;
+
+import javax.security.auth.login.AccountNotFoundException;
+
+@Service
+public class MailSenderServiceImpl implements MailSenderService {
+
+	@Autowired
+    MailSenderRepository mailSenderRepository;
+
+	@Autowired
+    JavaMailSender javaMailSender;
+    
+//    @Autowired
+//    public EmailService(JavaMailSender javaMailSender) {
+//        this.javaMailSender = javaMailSender;
+//    }
+//
+//    
+//    @Autowired
+//    public MailSenderServiceImpl(MailSenderRepository mailSenderRepository) {
+//        this.mailSenderRepository = mailSenderRepository;
+//    }
+    
+    public MailSender sendOtp(String to) throws MaxResendLimitException {
+        System.out.println("Received request to send OTP to: " + to);
+
+        // Check if the max resend limit has been reached within an hour
+        Date oneHourAgo = new Date(System.currentTimeMillis() - 3600 * 1000);
+        List<MailSender> recentEntries = mailSenderRepository.findRecentEntries(to, oneHourAgo);
+        System.out.println("Number of recent entries for " + to + " within the last hour: " + recentEntries.size());
+
+        if (recentEntries.size() >= 3) {
+            System.out.println("Maximum resend limit reached for this email within an hour.");
+            throw new MaxResendLimitException("Maximum resend limit reached for this email within an hour.");
+        }
+
+        
+
+       
+        public boolean sendEmail(EmailRequest emailRequest) {
+            try {
+                MimeMessage message = javaMailSender.createMimeMessage();
+                MimeMessageHelper helper = new MimeMessageHelper(message, true);
+
+                helper.setTo(emailRequest.getTo());
+                helper.setSubject(emailRequest.getSubject());
+                helper.setText(emailRequest.getText(), true);
+
+                javaMailSender.send(message);
+                return true;
+            } catch (MessagingException e) {
+                e.printStackTrace();
+                return false;
+            }
+        }
+        mailSender = mailSenderRepository.save(mailSender);
+        System.out.println("Generated and saved OTP entry with ID: " + mailSender.getId());
+
+        return mailSender;
+    }
+
+    @Override
+    public boolean verifyOtp(String to, String otp) {
+        // Find the MailSender entry for the specified 'to' email
+        Optional<MailSender> mailSenderOptional = mailSenderRepository.findByTo(to);
+        
+        if (mailSenderOptional.isPresent()) {
+            MailSender mailSender = mailSenderOptional.get();
+            
+            // Check if the OTP has expired
+            Date currentTime = new Date();
+            if (currentTime.after(mailSender.getExpiredTime())) {
+                // OTP has expired
+                return false;
+            }
+            
+            // Check if the provided OTP matches the stored OTP
+            if (otp.equals(mailSender.getOtp())) {
+                // OTP is valid; you can delete the entry to prevent further verification attempts
+                mailSenderRepository.delete(mailSender);
+                return true;
+            }
+        }
+        
+        // If no valid MailSender entry or OTP mismatch, return false
+        return false;
+    }
+
+}

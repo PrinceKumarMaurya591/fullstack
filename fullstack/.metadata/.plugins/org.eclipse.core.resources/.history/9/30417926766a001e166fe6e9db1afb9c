@@ -1,0 +1,28 @@
+package com.fullstack.serviceImpl;
+
+import java.time.LocalDateTime;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import com.fullstack.entity.RevokedToken;
+import com.fullstack.repository.RevokedTokenRepository;
+
+@Service
+public class TokenRevocationService implements TokenRevocationService{
+
+	
+	  @Autowired
+	    private RevokedTokenRepository revokedTokenRepository;
+
+	    public void revokeToken(String token) {
+	        RevokedToken revokedToken = new RevokedToken();
+	        revokedToken.setToken(token);
+	        revokedToken.setRevokedAt(LocalDateTime.now());
+	        revokedTokenRepository.save(revokedToken);
+	    }
+
+	    public boolean isTokenRevoked(String token) {
+	        return revokedTokenRepository.existsByToken(token);
+	    }
+}

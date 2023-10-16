@@ -1,0 +1,72 @@
+package com.fullstack.serviceImpl;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import com.fullstack.repository.MailSenderRepository;
+import com.fullstack.entity.MailSender;
+import com.fullstack.exception.MaxResendLimitException;
+
+import com.fullstack.service.MailSenderService;
+
+import java.util.Date;
+import java.util.List;
+import java.util.Optional;
+
+import javax.security.auth.login.AccountNotFoundException;
+
+@Service
+public class MailSenderServiceImpl implements MailSenderService {
+
+    private final MailSenderRepository mailSenderRepository;
+
+    @Autowired
+    public MailSenderServiceImpl(MailSenderRepository mailSenderRepository) {
+        this.mailSenderRepository = mailSenderRepository;
+    }
+
+    @Override
+    public MailSender sendOtp(String to) throws MaxResendLimitException {
+        // Check if the max resend limit has been reached within an hour
+        Date oneHourAgo = new Date(System.currentTimeMillis() - 3600 * 1000);
+        List<MailSender> recentEntries = mailSenderRepository.findRecentEntries(to, oneHourAgo);
+        
+        if (recentEntries.size() >= 3) {
+            throw new MaxResendLimitException("Maximum resend limit reached for this email within an hour.");
+      
+        }
+        
+        MailSender mailSender = new MailSender();
+        // Generate and send OTP
+        // Set other fields like time, expiredTime, and otp
+        return mailSenderRepository.save(mailSender);
+    }
+
+    @Override
+    public boolean verifyOtp(String to, String otp) {
+        // Find the MailSender entry for the specified 'to' email
+        Optional<MailSender> mailSenderOptional = mailSenderRepository.findByTo(to);
+        
+        if (mailSenderOptional.isPresent()) {
+            MailSender mailSender = mailSenderOptional.get();
+            
+            // Check if the OTP has expired
+            Date currentTime = new Date();
+            if (currentTime.after(mailSender.getExpiredTime())) {
+                // OTP has expired
+                return false;
+            }
+            
+            // Check if the provided OTP matches the stored OTP
+            if (otp.equals(mailSender.getOtp())) {
+                // OTP is valid; you can delete the entry to prevent further verification attempts
+                mailSenderRepository.delete(mailSender);
+                return true;
+            }
+        }
+        
+        // If no valid MailSender entry or OTP mismatch, return false
+        return false;
+    }
+
+}
